@@ -21,6 +21,27 @@
     }
     var linkedin = SafeUrl("linkedinUrl");
     var facebook = SafeUrl("facebookUrl");
+
+    // Absolute URLs for SEO tags and structured data
+    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
+    var canonical = baseUrl + Model.Url();
+    var ogImage = SiteImages.For(Model, 1200, 630);
+    if (Model.Id == home.Id) { ogImage = SiteImages.Pick(home, "heroImage", "hero", 1200, 630); }
+    if (ogImage.StartsWith('/')) { ogImage = baseUrl + ogImage; }
+
+    var orgJson = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "Organization",
+        ["name"] = "Tanglaw Infrastructure Partners",
+        ["description"] = "Integrated project management and infrastructure delivery, from feasibility to handover.",
+        ["url"] = baseUrl + home.Url(),
+        ["logo"] = baseUrl + "/images/logo-640.png",
+        ["email"] = email,
+        ["telephone"] = phone,
+        ["address"] = string.IsNullOrWhiteSpace(address) ? null : new Dictionary<string, string> { ["@type"] = "PostalAddress", ["streetAddress"] = address.Replace("\n", ", ") },
+        ["sameAs"] = new[] { linkedin, facebook }.Where(s => s is not null).ToArray(),
+    }.Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value));
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -33,10 +54,24 @@
         <meta name="description" content="@metaDescription" />
         <meta property="og:description" content="@metaDescription" />
     }
+    <link rel="canonical" href="@canonical" />
     <meta property="og:title" content="@pageTitle" />
-    <meta property="og:type" content="website" />
-    <meta name="theme-color" content="#0b2239" />
-    <script>document.documentElement.classList.add('js');</script>
+    <meta property="og:type" content="@(Model.ContentType.Alias == "insightItem" ? "article" : "website")" />
+    <meta property="og:url" content="@canonical" />
+    <meta property="og:image" content="@ogImage" />
+    <meta property="og:site_name" content="Tanglaw Infrastructure Partners" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#08131e" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/images/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon.png" />
+    <link rel="preload" href="/images/logo.png" as="image" />
+    @* Apply the saved theme before first paint (no flash), and enable JS-only styles *@
+    <script>(function(d){d.classList.add('js');try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light')d.setAttribute('data-theme',t);}catch(e){}})(document.documentElement);</script>
+    <script type="application/ld+json">@Html.Raw(orgJson)</script>
+    @await RenderSectionAsync("head", required: false)
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://images.unsplash.com" />
@@ -52,7 +87,7 @@
         <div class="container header-inner">
             <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Open menu" aria-controls="main-nav" />
             <a class="brand" href="@home.Url()" aria-label="Tanglaw Infrastructure Partners, home">
-                <span class="brand-mark" aria-hidden="true">T</span>
+                <img class="brand-logo" src="/images/logo.png" alt="" width="56" height="48" />
                 <span class="brand-text">Tanglaw<small>Infrastructure Partners</small></span>
             </a>
             <label for="nav-toggle" class="nav-toggle-label" aria-hidden="true"><span></span></label>
@@ -71,6 +106,9 @@
                     }
                 </ul>
             </nav>
+            <button type="button" class="theme-toggle" aria-label="Switch color theme">
+                @Icons.Get("sun", "icon sun")@Icons.Get("moon", "icon moon")
+            </button>
         </div>
     </header>
 
@@ -82,7 +120,7 @@
         <div class="container footer-top">
             <div class="reveal">
                 <a class="brand" href="@home.Url()">
-                    <span class="brand-mark" aria-hidden="true">T</span>
+                    <img class="brand-logo" src="/images/logo.png" alt="" width="56" height="48" />
                     <span class="brand-text">Tanglaw<small>Infrastructure Partners</small></span>
                 </a>
                 <p>Integrated project management and infrastructure delivery, from feasibility to handover. Built on discipline, transparency and public value.</p>

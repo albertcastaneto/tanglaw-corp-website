@@ -11,6 +11,7 @@
         .Select(s => s!.Split('|', 2))
         .ToList();
     var values = TextLines.Pairs(Model.HasProperty("values") ? Model.Value<string>("values") : null);
+    var team = TextLines.Pairs(Model.HasProperty("team") ? Model.Value<string>("team") : null);
     string[] valueIcons = { "target", "shield", "chart", "users", "check-circle", "compass" };
 }
 
@@ -59,6 +60,31 @@
                         <span class="icon-box">@Icons.Get(TextLines.IconAt(v, valueIcons))</span>
                         <h3>@values[v].Title</h3>
                         @if (!string.IsNullOrWhiteSpace(values[v].Text)) {<p>@values[v].Text</p>}
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@if (team.Any())
+{
+    <section class="section">
+        <div class="container">
+            <div class="section-head center">
+                <div>
+                    <span class="eyebrow reveal">Our people</span>
+                    <h2 class="reveal" style="--d:1">@(Model.Value<string>("teamTitle"))</h2>
+                </div>
+            </div>
+            <div class="team-grid">
+                @for (var t = 0; t < team.Count; t++)
+                {
+                    var initials = string.Concat(team[t].Title.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpperInvariant(w[0])));
+                    <div class="card team-card reveal" style="--d:@(t % 4)">
+                        <span class="team-avatar" aria-hidden="true">@initials</span>
+                        <h3>@team[t].Title</h3>
+                        @if (!string.IsNullOrWhiteSpace(team[t].Text)) {<p>@team[t].Text</p>}
                     </div>
                 }
             </div>

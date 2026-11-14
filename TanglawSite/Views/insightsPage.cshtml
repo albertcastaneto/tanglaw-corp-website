@@ -1,0 +1,47 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Extensions
+@using TanglawSite.Models
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@{
+    Layout = "master.cshtml";
+    var articles = InsightHelper.Sorted(Model).ToList();
+    var featured = articles.FirstOrDefault();
+}
+
+@await Html.PartialAsync("pageHeader", Model)
+
+<section class="section">
+    <div class="container">
+        @if (featured is null)
+        {
+            <p class="lead">No articles yet. Check back soon.</p>
+        }
+        else
+        {
+            var category = featured.Value<string>("category");
+            <a class="card insight-card insight-featured reveal" href="@featured.Url()">
+                <div class="thumb"><img class="fade" src="@SiteImages.For(featured, 1100, 760)" alt="" /></div>
+                <div class="body">
+                    <div class="meta">
+                        <span class="chip">Latest</span>
+                        @if (!string.IsNullOrWhiteSpace(category)) {<span class="chip">@category</span>}
+                        <span>@Icons.Get("calendar") <time datetime="@InsightHelper.DateOf(featured).ToString("yyyy-MM-dd")">@InsightHelper.DisplayDate(featured)</time></span>
+                        <span>@Icons.Get("clock") @InsightHelper.ReadingMinutes(featured) min read</span>
+                    </div>
+                    <h2>@featured.Name</h2>
+                    <p>@(featured.Value<string>("summary"))</p>
+                    <span class="link-arrow">Read article @Icons.Get("arrow-right")</span>
+                </div>
+            </a>
+
+            <div class="insight-grid">
+                @for (var n = 1; n < articles.Count; n++)
+                {
+                    @await Html.PartialAsync("insightCard", articles[n], new ViewDataDictionary(ViewData) { ["delay"] = n - 1 })
+                }
+            </div>
+        }
+    </div>
+</section>
+
+@await Html.PartialAsync("pageCta", Model, new ViewDataDictionary(ViewData) { ["ctaButton"] = "Talk to our team" })

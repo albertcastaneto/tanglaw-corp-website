@@ -1,0 +1,21 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Extensions
+@using TanglawSite.Models
+@* Card for one Insights article. ViewData["delay"] = reveal stagger index. *@
+@{
+    var delay = ViewData["delay"] is int d ? d % 3 : 0;
+    var category = Model.Value<string>("category");
+}
+<a class="card insight-card reveal" style="--d:@delay" href="@Model.Url()">
+    <div class="thumb"><img class="fade" src="@SiteImages.For(Model, 800, 500)" alt="" loading="lazy" /></div>
+    <div class="body">
+        <div class="meta">
+            @if (!string.IsNullOrWhiteSpace(category)) {<span class="chip">@category</span>}
+            <span>@Icons.Get("calendar") <time datetime="@InsightHelper.DateOf(Model).ToString("yyyy-MM-dd")">@InsightHelper.DisplayDate(Model)</time></span>
+            <span>@Icons.Get("clock") @InsightHelper.ReadingMinutes(Model) min read</span>
+        </div>
+        <h3>@Model.Name</h3>
+        <p>@(Model.Value<string>("summary"))</p>
+        <span class="link-arrow">Read article @Icons.Get("arrow-right")</span>
+    </div>
+</a>

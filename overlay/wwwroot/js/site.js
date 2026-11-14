@@ -89,6 +89,7 @@
     if (navToggle) {
         var sync = function () {
             document.body.classList.toggle("nav-open", navToggle.checked);
+            if (navToggle.checked && header) header.classList.remove("is-hidden");
             if (lenis) { if (navToggle.checked) lenis.stop(); else lenis.start(); }
         };
         navToggle.addEventListener("change", sync);
@@ -143,6 +144,65 @@
             });
         }, { threshold: 0.6 });
         counters.forEach(function (el) { co.observe(el); });
+    }
+
+    /* ---------- Theme toggle (light / dark), remembered per visitor ---------- */
+    var themeBtn = document.querySelector(".theme-toggle");
+    if (themeBtn) {
+        var isDark = function () {
+            var t = root.getAttribute("data-theme");
+            return t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+        };
+        var syncLabel = function () {
+            themeBtn.setAttribute("aria-label", isDark() ? "Switch to light mode" : "Switch to dark mode");
+            themeBtn.setAttribute("aria-pressed", isDark() ? "true" : "false");
+        };
+        syncLabel();
+        themeBtn.addEventListener("click", function () {
+            var next = isDark() ? "light" : "dark";
+            var apply = function () { root.setAttribute("data-theme", next); syncLabel(); };
+            try { localStorage.setItem("theme", next); } catch (e) { /* private mode */ }
+            if (document.startViewTransition && !reduceMotion) document.startViewTransition(apply); else apply();
+        });
+    }
+
+    /* ---------- Project filter (by sector) ---------- */
+    var filterBar = document.querySelector("[data-filter-bar]");
+    if (filterBar) {
+        var tiles = Array.prototype.slice.call(document.querySelectorAll("[data-sector]"));
+        filterBar.addEventListener("click", function (e) {
+            var btn = e.target.closest("[data-filter]");
+            if (!btn) return;
+            var value = btn.getAttribute("data-filter");
+            filterBar.querySelectorAll("[data-filter]").forEach(function (b) { b.setAttribute("aria-pressed", b === btn ? "true" : "false"); });
+            tiles.forEach(function (tile, i) {
+                var show = value === "*" || tile.getAttribute("data-sector") === value;
+                tile.classList.toggle("is-filtered-out", !show);
+                tile.classList.remove("is-filtering-in");
+                if (show) {
+                    tile.classList.add("is-visible");
+                    void tile.offsetWidth; // restart the animation
+                    tile.style.animationDelay = (i % 6) * 60 + "ms";
+                    tile.classList.add("is-filtering-in");
+                }
+            });
+            var status = document.querySelector("[data-filter-status]");
+            if (status) {
+                var n = tiles.filter(function (t) { return !t.classList.contains("is-filtered-out"); }).length;
+                status.textContent = n + (n === 1 ? " project shown" : " projects shown");
+            }
+        });
+    }
+
+    /* ---------- Copy article link ---------- */
+    var copyBtn = document.querySelector("[data-copy-link]");
+    if (copyBtn && navigator.clipboard) {
+        copyBtn.addEventListener("click", function () {
+            navigator.clipboard.writeText(window.location.href).then(function () {
+                var note = document.querySelector(".share .copied");
+                if (note) { note.classList.add("show"); setTimeout(function () { note.classList.remove("show"); }, 2000); }
+            });
+        });
     }
 
     /* ---------- Fade images in when loaded ---------- */

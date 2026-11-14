@@ -1,0 +1,83 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using System.Net
+@using Umbraco.Extensions
+@using Umbraco.Cms.Core.Strings
+@using TanglawSite.Models
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@{
+    Layout = "master.cshtml";
+    var parent = Model.Parent();
+    var category = Model.Value<string>("category");
+    var author = Model.Value<string>("author");
+    var url = $"{Context.Request.Scheme}://{Context.Request.Host}{Model.Url()}";
+    var related = parent is null ? new List<Umbraco.Cms.Core.Models.PublishedContent.IPublishedContent>()
+        : InsightHelper.Sorted(parent).Where(x => x.Id != Model.Id).Take(3).ToList();
+
+    var articleJson = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "Article",
+        ["headline"] = Model.Name,
+        ["description"] = Model.Value<string>("summary"),
+        ["datePublished"] = InsightHelper.DateOf(Model).ToString("yyyy-MM-dd"),
+        ["dateModified"] = Model.UpdateDate.ToString("yyyy-MM-dd"),
+        ["author"] = new Dictionary<string, string> { ["@type"] = "Organization", ["name"] = author ?? "Tanglaw Infrastructure Partners" },
+        ["image"] = SiteImages.For(Model, 1200, 630),
+        ["mainEntityOfPage"] = url,
+    });
+}
+
+@section head {
+    <script type="application/ld+json">@Html.Raw(articleJson)</script>
+}
+
+@await Html.PartialAsync("pageHeader", Model)
+
+<section class="section">
+    <div class="container">
+        <article class="article">
+            <div class="meta reveal">
+                @if (!string.IsNullOrWhiteSpace(category)) {<span class="chip">@category</span>}
+                <span>@Icons.Get("calendar") <time datetime="@InsightHelper.DateOf(Model).ToString("yyyy-MM-dd")">@InsightHelper.DisplayDate(Model)</time></span>
+                <span>@Icons.Get("clock") @InsightHelper.ReadingMinutes(Model) min read</span>
+                @if (!string.IsNullOrWhiteSpace(author)) {<span>@Icons.Get("user") @author</span>}
+            </div>
+            <div class="article-hero img-reveal"><img class="fade" src="@SiteImages.For(Model, 1400, 700)" alt="@Model.Name" /></div>
+            <div class="rte reveal">
+                @Html.Raw(Model.Value<IHtmlEncodedString>("bodyText")?.ToHtmlString())
+            </div>
+            <div class="share">
+                <span>Share</span>
+                <a href="https://www.linkedin.com/sharing/share-offsite/?url=@WebUtility.UrlEncode(url)" target="_blank" rel="noopener" aria-label="Share on LinkedIn">@Icons.Get("linkedin")</a>
+                <a href="https://www.facebook.com/sharer/sharer.php?u=@WebUtility.UrlEncode(url)" target="_blank" rel="noopener" aria-label="Share on Facebook">@Icons.Get("facebook")</a>
+                <a href="mailto:?subject=@Uri.EscapeDataString(Model.Name ?? "")&amp;body=@Uri.EscapeDataString(url)" aria-label="Share by email">@Icons.Get("mail")</a>
+                <button type="button" data-copy-link aria-label="Copy link">@Icons.Get("link")</button>
+                <span class="copied" role="status">Link copied</span>
+            </div>
+        </article>
+    </div>
+</section>
+
+@if (related.Any())
+{
+    <section class="section section-alt">
+        <div class="container">
+            <div class="section-head">
+                <div>
+                    <span class="eyebrow reveal">Keep reading</span>
+                    <h2 class="reveal" style="--d:1">More insights</h2>
+                </div>
+                @if (parent is not null)
+                {
+                    <a class="link-arrow reveal" href="@parent.Url()">All insights @Icons.Get("arrow-right")</a>
+                }
+            </div>
+            <div class="insight-grid">
+                @for (var n = 0; n < related.Count; n++)
+                {
+                    @await Html.PartialAsync("insightCard", related[n], new ViewDataDictionary(ViewData) { ["delay"] = n })
+                }
+            </div>
+        </div>
+    </section>
+}

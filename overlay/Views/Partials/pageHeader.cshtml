@@ -4,7 +4,22 @@
 @* Shared banner for inner pages: background photo, breadcrumb, title and summary. *@
 @{
     var crumbs = Model.Ancestors().Reverse().ToList();
+    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
+    var trail = crumbs.Append(Model).ToList();
+    var breadcrumbJson = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "BreadcrumbList",
+        ["itemListElement"] = trail.Select((c, i) => new Dictionary<string, object>
+        {
+            ["@type"] = "ListItem",
+            ["position"] = i + 1,
+            ["name"] = c.Level == 1 ? "Home" : c.Name ?? "",
+            ["item"] = baseUrl + c.Url(),
+        }).ToArray(),
+    });
 }
+<script type="application/ld+json">@Html.Raw(breadcrumbJson)</script>
 <section class="page-header">
     <div class="hero-bg" data-parallax="0.2" aria-hidden="true">
         <img src="@SiteImages.For(Model, 2000, 1100)" alt="" fetchpriority="high" />

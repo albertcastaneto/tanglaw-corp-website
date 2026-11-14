@@ -15,5 +15,7 @@ public class SiteSetupComposer : IComposer
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, SiteSetupHandler>();
         // Runs after the setup: adds the editable design fields (images, home sections, CTAs...)
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, SiteContentUpgradeHandler>();
+        // 2026 features: Insights section and project sectors
+        builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, SiteFeaturesHandler>();
     }
 }

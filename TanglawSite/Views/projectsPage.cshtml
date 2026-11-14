@@ -5,19 +5,44 @@
 @{
     Layout = "master.cshtml";
     var i = 0;
+    var projects = Model.Children().Where(x => x.IsVisible()).ToList();
+    string? SectorOf(Umbraco.Cms.Core.Models.PublishedContent.IPublishedContent p)
+        => p.HasProperty("sector") ? p.Value<string>("sector")?.Trim() : null;
+    // Filter buttons: one per sector used by at least one project (set the "Sector" field on each project)
+    var sectors = projects.Select(SectorOf).Where(s => !string.IsNullOrWhiteSpace(s))
+        .GroupBy(s => s!, StringComparer.OrdinalIgnoreCase)
+        .Select(g => (Name: g.Key, Count: g.Count()))
+        .OrderBy(g => g.Name)
+        .ToList();
 }
 
 @await Html.PartialAsync("pageHeader", Model)
 
 <section class="section">
     <div class="container">
+        @if (sectors.Count > 1)
+        {
+            <div class="filters reveal" data-filter-bar role="group" aria-label="Filter projects by sector">
+                <button type="button" class="filter-btn" data-filter="*" aria-pressed="true">All<span class="count">@projects.Count</span></button>
+                @foreach (var s in sectors)
+                {
+                    <button type="button" class="filter-btn" data-filter="@s.Name" aria-pressed="false">@s.Name<span class="count">@s.Count</span></button>
+                }
+            </div>
+            <p class="visually-hidden" data-filter-status aria-live="polite"></p>
+        }
         <div class="project-grid">
-            @foreach (var item in Model.Children().Where(x => x.IsVisible()))
+            @foreach (var item in projects)
             {
-                <a class="project-tile reveal reveal-zoom" style="--d:@(i++ % 3)" href="@item.Url()">
+                var sector = SectorOf(item);
+                <a class="project-tile reveal reveal-zoom" style="--d:@(i++ % 3)" href="@item.Url()" data-sector="@sector">
                     <img class="fade" src="@SiteImages.For(item, 800, 920)" alt="" loading="lazy" />
                     <div class="tile-body">
                         <div class="tags">
+                            @if (!string.IsNullOrWhiteSpace(sector))
+                            {
+                                <span class="tag">@sector</span>
+                            }
                             @if (!string.IsNullOrWhiteSpace(item.Value<string>("location")))
                             {
                                 <span class="tag">@Icons.Get("map-pin") @(item.Value<string>("location"))</span>

@@ -84,6 +84,10 @@ public class SiteContentUpgradeHandler : INotificationAsyncHandler<UmbracoApplic
             "Cost discipline|Tight control of budgets, variations and claims across every package.\n" +
             "One integrated team|Engineers, planners and contract specialists working as a single unit.", "About Us");
 
+        yield return new("contentPage", "teamTitle", "Team Title", Kind.Textstring, "Team", null, "Leadership team", "About Us");
+        yield return new("contentPage", "team", "Team Members", Kind.Textarea, "Team", "One person per line, written as: Name|Role. Leave empty to hide the section.",
+            "Maria Santos|Managing Director\nJose Ramirez|Director, Project Delivery\nAna Villanueva|Head of Commercial & Procurement\nCarlo Mendoza|Principal Engineer, Construction Supervision", "About Us");
+
         // ---------- Call to action on listing / content pages ----------
         foreach (var (t, title, text) in new[]
         {

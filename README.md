@@ -59,7 +59,9 @@ TanglawSite/
 ├── Composing/
 │   ├── SiteSetupComposer.cs     # registers the first-run setup
 │   ├── SiteSetupHandler.cs      # creates doc types, templates, demo content (runs once)
-│   └── SiteContentUpgradeHandler.cs # adds the editable image/section fields (idempotent)
+│   ├── SiteContentUpgradeHandler.cs # adds the editable image/section fields (idempotent)
+│   ├── SiteFeaturesHandler.cs   # Insights section + project sectors (idempotent)
+│   └── SeoComposer.cs           # /sitemap.xml and /robots.txt
 ├── Controllers/
 │   └── ContactFormController.cs # SurfaceController for the contact form
 ├── Models/
@@ -118,6 +120,21 @@ Images are optional: if an image field is empty, a temporary placeholder photo i
 
 How it works: on every start the handler adds any of these fields that are missing and fills them **once** with the sample text, so nothing you edit later is overwritten. Icons for list items rotate through a fixed set in the views.
 
+### 2026 features
+
+| Feature | Where | Editing |
+|---|---|---|
+| **Dark mode** | Sun/moon button in the header | Follows the visitor's system setting until they choose; the choice is remembered in their browser |
+| **Floating header** | All pages | Turns into a rounded "pill" when scrolling; hides on scroll down, returns on scroll up |
+| **Page transitions** | All pages | Smooth fade between pages in browsers that support View Transitions (others navigate normally) |
+| **Bento services grid** | Home | The first service is shown large with its Banner / Main Image |
+| **Insights (news & articles)** | `/insights/`, latest 3 on Home | Right-click **Insights** → **Create** → **Insight**. Fields: summary, body, article date (sorts newest first), category, author, image. Reading time is calculated |
+| **Leadership team** | About Us | **Team Members** field: one `Name\|Role` per line |
+| **Project filter** | Projects | Set **Sector** on each project; a filter button appears per sector (2+ sectors needed) |
+| **SEO** | All pages | Canonical + Open Graph tags, `Organization`, `BreadcrumbList` and `Article` structured data, `/sitemap.xml`, `/robots.txt` |
+
+These are created by `SiteFeaturesHandler` (Insights types, templates, sample articles, sectors) and `SiteContentUpgradeHandler` (team fields). Both only add what is missing, so they are safe on every start.
+
 ## Contact form email
 
 Without SMTP settings, form submissions are written to the log (`umbraco/Logs`) and the visitor still sees the thank-you message. To send real emails, add this to `appsettings.json` under `Umbraco:CMS:Global`:
@@ -138,6 +155,7 @@ The recipient is the **Email** field on the Contact page. Do not commit SMTP pas
 
 - **Brand colors:** edit the `:root` variables at the top of `site.css`.
 - **Company name:** search for "Tanglaw" in `Views/master.cshtml`.
+- **Logo:** the source file is `logo.png` (repo root). The site uses web-sized copies in `wwwroot/images/` (`logo.png` 240px for the header and footer, `logo-640.png` for structured data, `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`) and `wwwroot/favicon.ico`. To change the logo, replace those files with the same names.
 - **Images:** upload photos under **Media**, then pick them in each page's image fields (see the table above). Placeholder photos are listed in `Models/SiteImages.cs`.
 - **Hard-coded labels:** small labels such as "Who we are", "How we deliver" and button texts are still in the views.
 
@@ -164,6 +182,8 @@ The recipient is the **Email** field on the Contact page. Do not commit SMTP pas
 | Site shows the Umbraco "no published content" page | Check `umbraco/Logs` for `TanglawSite:` messages. If setup failed, use *Manual setup*. |
 | Template error about `master` | Make sure `Views/master.cshtml` exists and the **Master** template appears under **Settings → Templates**. |
 | Contact form shows no error but no email | SMTP not configured; check the log for "Contact form received". |
+| Pages hang (spin forever) during the first start after an update, while static files still load | Seen once while the Insights types were being created and a page was requested at the same moment. Stop the site (Ctrl+C) and start it again: setup resumes where it stopped (log shows `insights step 1/4` … `4/4`). |
+| Backoffice login says "This server only accepts HTTPS requests" | Open the `https://` address (e.g. `https://localhost:44329/umbraco`). |
 
 ### Manual setup (fallback)
 
