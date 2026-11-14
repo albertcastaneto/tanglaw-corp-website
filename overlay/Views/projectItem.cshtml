@@ -1,0 +1,99 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Extensions
+@using Umbraco.Cms.Core.Strings
+@using TanglawSite.Models
+@{
+    Layout = "master.cshtml";
+    var parent = Model.Parent();
+    var siblings = parent?.Children().Where(x => x.IsVisible()).ToList() ?? new List<Umbraco.Cms.Core.Models.PublishedContent.IPublishedContent>();
+    var index = siblings.FindIndex(x => x.Id == Model.Id);
+    var prev = index > 0 ? siblings[index - 1] : null;
+    var next = index >= 0 && index < siblings.Count - 1 ? siblings[index + 1] : null;
+    var contact = Model.Root().Children().FirstOrDefault(x => x.ContentType.Alias == "contactPage");
+    var facts = new (string Label, string Icon, string? Value)[]
+    {
+        ("Location", "map-pin", Model.Value<string>("location")),
+        ("Client", "building", Model.Value<string>("projectClient")),
+        ("Completed", "calendar", Model.Value<string>("projectYear")),
+        ("Scope / Value", "banknote", Model.Value<string>("projectScope")),
+    };
+    var picked = Model.HasProperty("gallery") && Model.Value<IEnumerable<Umbraco.Cms.Core.Models.MediaWithCrops>>("gallery")?.Any() == true;
+    var gallery = SiteImages.GalleryOrPlaceholders(Model, 3, 900, 700);
+    var ourRole = TextLines.Split(Model.HasProperty("ourRole") ? Model.Value<string>("ourRole") : null);
+}
+
+@await Html.PartialAsync("pageHeader", Model)
+
+@if (facts.Any(f => !string.IsNullOrWhiteSpace(f.Value)))
+{
+    <section class="facts-strip" aria-label="Project facts">
+        <div class="container">
+            <ul class="reveal">
+                @foreach (var f in facts.Where(f => !string.IsNullOrWhiteSpace(f.Value)))
+                {
+                    <li><span class="icon-box">@Icons.Get(f.Icon)</span><div><small>@f.Label</small><strong>@f.Value</strong></div></li>
+                }
+            </ul>
+        </div>
+    </section>
+}
+
+<section class="section">
+    <div class="container two-col">
+        <article>
+            <span class="eyebrow reveal">Project overview</span>
+            <div class="rte reveal" style="--d:1">
+                @Html.Raw(Model.Value<IHtmlEncodedString>("bodyText")?.ToHtmlString())
+            </div>
+
+            <div class="gallery">
+                <figure class="img-reveal"><img class="fade" src="@SiteImages.For(Model, 1200, 900)" alt="@Model.Name" loading="lazy" /></figure>
+                @for (var g = 0; g < gallery.Count && g < 2; g++)
+                {
+                    <figure class="img-reveal" style="--d:@(g + 1)"><img class="fade" src="@gallery[g]" alt="@Model.Name photo @(g + 2)" loading="lazy" /></figure>
+                }
+            </div>
+            @if (!picked)
+            {
+                <p class="temp-note">Photos are temporary placeholders.</p>
+            }
+
+            @if (prev is not null || next is not null)
+            {
+                <nav class="pager" aria-label="More projects">
+                    @if (prev is not null)
+                    {
+                        <a href="@prev.Url()"><small>@Icons.Get("arrow-left") Previous project</small><strong>@prev.Name</strong></a>
+                    }
+                    @if (next is not null)
+                    {
+                        <a class="next" href="@next.Url()"><small>Next project @Icons.Get("arrow-right")</small><strong>@next.Name</strong></a>
+                    }
+                </nav>
+            }
+        </article>
+
+        <aside class="sidebar">
+            @if (ourRole.Any())
+            {
+                <div class="panel reveal">
+                    <h3>Our role</h3>
+                    <ul class="checklist" style="grid-template-columns:1fr;margin:0">
+                        @foreach (var item in ourRole)
+                        {
+                            <li>@Icons.Get("check") @item</li>
+                        }
+                    </ul>
+                </div>
+            }
+            @if (contact is not null)
+            {
+                <div class="panel panel-dark reveal" style="--d:1">
+                    <h3>Planning a similar project?</h3>
+                    <p>We can help you scope, procure and deliver it.</p>
+                    <a class="btn btn-sm" href="@contact.Url()">Talk to us @Icons.Get("arrow-right")</a>
+                </div>
+            }
+        </aside>
+    </div>
+</section>

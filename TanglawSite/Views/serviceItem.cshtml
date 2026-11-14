@@ -1,0 +1,77 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Extensions
+@using Umbraco.Cms.Core.Strings
+@using TanglawSite.Models
+@{
+    Layout = "master.cshtml";
+    var parent = Model.Parent();
+    var siblings = parent?.Children().Where(x => x.IsVisible()).ToList() ?? new List<Umbraco.Cms.Core.Models.PublishedContent.IPublishedContent>();
+    var contact = Model.Root().Children().FirstOrDefault(x => x.ContentType.Alias == "contactPage");
+    var index = siblings.FindIndex(x => x.Id == Model.Id);
+    var prev = index > 0 ? siblings[index - 1] : null;
+    var next = index >= 0 && index < siblings.Count - 1 ? siblings[index + 1] : null;
+    var whatYouGet = TextLines.Split(Model.HasProperty("whatYouGet") ? Model.Value<string>("whatYouGet") : null);
+}
+
+@await Html.PartialAsync("pageHeader", Model)
+
+<section class="section">
+    <div class="container two-col">
+        <article>
+            <div class="img-reveal" style="border-radius:var(--radius);overflow:hidden;margin-bottom:2.5rem;aspect-ratio:16/9;box-shadow:var(--shadow)">
+                <img class="fade" src="@SiteImages.For(Model, 1200, 680)" alt="@Model.Name (placeholder photo)" style="width:100%;height:100%;object-fit:cover" />
+            </div>
+            <div class="rte reveal">
+                @Html.Raw(Model.Value<IHtmlEncodedString>("bodyText")?.ToHtmlString())
+            </div>
+
+            @if (whatYouGet.Any())
+            {
+                <h2 class="reveal" style="font-size:1.5rem;margin-top:2.5rem">What you get</h2>
+                <ul class="checklist reveal">
+                    @foreach (var item in whatYouGet)
+                    {
+                        <li>@Icons.Get("check") @item</li>
+                    }
+                </ul>
+            }
+
+            @if (prev is not null || next is not null)
+            {
+                <nav class="pager" aria-label="More services">
+                    @if (prev is not null)
+                    {
+                        <a href="@prev.Url()"><small>@Icons.Get("arrow-left") Previous</small><strong>@prev.Name</strong></a>
+                    }
+                    @if (next is not null)
+                    {
+                        <a class="next" href="@next.Url()"><small>Next @Icons.Get("arrow-right")</small><strong>@next.Name</strong></a>
+                    }
+                </nav>
+            }
+        </article>
+
+        <aside class="sidebar">
+            @if (siblings.Any())
+            {
+                <div class="panel reveal">
+                    <h3>All services</h3>
+                    <ul class="side-nav">
+                        @foreach (var s in siblings)
+                        {
+                            <li><a href="@s.Url()" class="@(s.Id == Model.Id ? "active" : null)">@s.Name @Icons.Get("arrow-right")</a></li>
+                        }
+                    </ul>
+                </div>
+            }
+            @if (contact is not null)
+            {
+                <div class="panel panel-dark reveal" style="--d:1">
+                    <h3>Need help with @Model.Name.ToLowerInvariant()?</h3>
+                    <p>Talk to our team about your project's goals and constraints.</p>
+                    <a class="btn btn-sm" href="@contact.Url()">Contact us @Icons.Get("arrow-right")</a>
+                </div>
+            }
+        </aside>
+    </div>
+</section>

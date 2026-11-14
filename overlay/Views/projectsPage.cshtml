@@ -1,0 +1,40 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Extensions
+@using TanglawSite.Models
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@{
+    Layout = "master.cshtml";
+    var i = 0;
+}
+
+@await Html.PartialAsync("pageHeader", Model)
+
+<section class="section">
+    <div class="container">
+        <div class="project-grid">
+            @foreach (var item in Model.Children().Where(x => x.IsVisible()))
+            {
+                <a class="project-tile reveal reveal-zoom" style="--d:@(i++ % 3)" href="@item.Url()">
+                    <img class="fade" src="@SiteImages.For(item, 800, 920)" alt="" loading="lazy" />
+                    <div class="tile-body">
+                        <div class="tags">
+                            @if (!string.IsNullOrWhiteSpace(item.Value<string>("location")))
+                            {
+                                <span class="tag">@Icons.Get("map-pin") @(item.Value<string>("location"))</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(item.Value<string>("projectYear")))
+                            {
+                                <span class="tag">@(item.Value<string>("projectYear"))</span>
+                            }
+                        </div>
+                        <h3>@item.Name</h3>
+                        <p>@(item.Value<string>("summary"))</p>
+                        <span class="more">View project @Icons.Get("arrow-right")</span>
+                    </div>
+                </a>
+            }
+        </div>
+    </div>
+</section>
+
+@await Html.PartialAsync("pageCta", Model, new ViewDataDictionary(ViewData) { ["ctaButton"] = "Start a project" })

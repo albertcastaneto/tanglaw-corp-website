@@ -1,0 +1,26 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Extensions
+@using TanglawSite.Models
+@* Call-to-action band for inner pages. Text comes from the page's "Call to Action" fields;
+   the background image is the Home page's "Call to Action Background". Empty title = hidden. *@
+@{
+    var home = Model.Root();
+    var contact = home.Children().FirstOrDefault(x => x.ContentType.Alias == "contactPage");
+    var title = Model.HasProperty("ctaTitle") ? Model.Value<string>("ctaTitle") : null;
+    var text = Model.HasProperty("ctaText") ? Model.Value<string>("ctaText") : null;
+    var button = ViewData["ctaButton"] as string ?? "Contact us";
+}
+@if (contact is not null && !string.IsNullOrWhiteSpace(title))
+{
+    <section class="cta">
+        <div class="cta-bg" data-parallax="0.18" aria-hidden="true"><img src="@SiteImages.Pick(home, "ctaImage", "cta", 2000, 1100)" alt="" loading="lazy" /></div>
+        <div class="container">
+            <h2 class="reveal">@title</h2>
+            @if (!string.IsNullOrWhiteSpace(text))
+            {
+                <p class="reveal" style="--d:1">@text</p>
+            }
+            <div class="hero-actions reveal" style="--d:2"><a class="btn" href="@contact.Url()">@button @Icons.Get("arrow-right")</a></div>
+        </div>
+    </section>
+}

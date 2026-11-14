@@ -1,0 +1,291 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Extensions
+@using Umbraco.Cms.Core.Strings
+@using TanglawSite.Models
+@{
+    Layout = "master.cshtml";
+
+    var services = Model.Children().FirstOrDefault(x => x.ContentType.Alias == "servicesPage");
+    var projects = Model.Children().FirstOrDefault(x => x.ContentType.Alias == "projectsPage");
+    var contact = Model.Children().FirstOrDefault(x => x.ContentType.Alias == "contactPage");
+    var about = Model.Children().FirstOrDefault(x => x.ContentType.Alias == "contentPage");
+
+    string? Text(string alias) => Model.HasProperty(alias) ? Model.Value<string>(alias) : null;
+
+    var stats = new[] { "statsLine1", "statsLine2", "statsLine3" }
+        .Select(Text)
+        .Where(s => !string.IsNullOrWhiteSpace(s) && s.Contains('|'))
+        .Select(s => s!.Split('|', 2))
+        .ToList();
+
+    // Highlight the last two words of the hero title in the accent color
+    var heroTitle = Text("heroTitle") ?? Model.Name ?? string.Empty;
+    var words = heroTitle.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    var titleStart = string.Join(' ', words.Take(Math.Max(0, words.Length - 2)));
+    var titleEnd = string.Join(' ', words.Skip(Math.Max(0, words.Length - 2)));
+
+    // Editable sections (Home page in the backoffice). Empty field = section hidden.
+    var heroEyebrow = Text("heroEyebrow");
+    var heroPoints = TextLines.Split(Text("heroPoints"));
+    var introBadge = (Text("introBadge") ?? string.Empty).Split('|', 2, StringSplitOptions.TrimEntries);
+    var introChecklist = TextLines.Split(Text("introChecklist"));
+    var sectors = TextLines.Split(Text("sectors"));
+    var processSteps = TextLines.Pairs(Text("processSteps"));
+    var testimonialQuote = Text("testimonialQuote");
+    var testimonialName = Text("testimonialName");
+    var initials = string.Concat((testimonialName ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpperInvariant(w[0])));
+    var ctaTitle = Text("ctaTitle");
+
+    string[] sectorIcons = { "map-pin", "layers", "building", "chart", "compass", "shield", "target" };
+    string[] stepIcons = { "compass", "layers", "hard-hat", "check-circle", "target", "shield" };
+}
+
+<section class="hero">
+    <div class="hero-bg" data-parallax="0.25" aria-hidden="true">
+        <img src="@SiteImages.Pick(Model, "heroImage", "hero", 2000, 1300)" alt="" fetchpriority="high" />
+    </div>
+    <div class="container">
+        <div class="hero-inner">
+            @if (!string.IsNullOrWhiteSpace(heroEyebrow))
+            {
+                <span class="eyebrow eyebrow-pill enter" style="--d:0">@heroEyebrow</span>
+            }
+            <h1 class="enter" style="--d:1">@titleStart <span class="hl">@titleEnd</span></h1>
+            <p class="lead enter" style="--d:2">@(Text("heroText"))</p>
+            <div class="hero-actions enter" style="--d:3">
+                @if (services is not null)
+                {
+                    <a class="btn" href="@services.Url()">@(Text("heroButtonText") ?? "Our Services") @Icons.Get("arrow-right")</a>
+                }
+                @if (contact is not null)
+                {
+                    <a class="btn btn-outline" href="@contact.Url()">Talk to Us</a>
+                }
+            </div>
+            @if (heroPoints.Any())
+            {
+                <ul class="hero-points enter" style="--d:4">
+                    @foreach (var point in heroPoints)
+                    {
+                        <li>@Icons.Get("check-circle") @point</li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+    <a class="scroll-cue" href="#intro" aria-label="Scroll to content"><span></span>Scroll</a>
+</section>
+
+@if (stats.Any())
+{
+    <section class="stats" aria-label="Key figures">
+        <div class="container">
+            <div class="stats-grid reveal">
+                @foreach (var s in stats)
+                {
+                    <div class="stat"><span class="stat-value" data-count>@s[0].Trim()</span><span class="stat-label">@s[1].Trim()</span></div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@if (sectors.Any())
+{
+    <section class="marquee" aria-label="@(Text("sectorsTitle") ?? "Sectors we serve")">
+        @if (!string.IsNullOrWhiteSpace(Text("sectorsTitle")))
+        {
+            <p class="marquee-title">@(Text("sectorsTitle"))</p>
+        }
+        <div class="marquee-track">
+            @for (var copy = 0; copy < 2; copy++)
+            {
+                <ul aria-hidden="@(copy == 1 ? "true" : "false")">
+                    @for (var s = 0; s < sectors.Count; s++)
+                    {
+                        <li>@Icons.Get(TextLines.IconAt(s, sectorIcons)) @sectors[s]</li>
+                    }
+                </ul>
+            }
+        </div>
+    </section>
+}
+
+<section class="section" id="intro">
+    <div class="container split">
+        <div class="media-stack reveal-left reveal">
+            <div class="main img-reveal"><img class="fade" src="@SiteImages.Pick(Model, "introImage", "intro-main", 900, 1000)" alt="" loading="lazy" /></div>
+            <div class="small img-reveal" style="--d:3"><img class="fade" src="@SiteImages.Pick(Model, "introImageSmall", "intro-small", 600, 450)" alt="" loading="lazy" /></div>
+            @if (!string.IsNullOrWhiteSpace(introBadge[0]))
+            {
+                <div class="badge-years"><strong>@introBadge[0]</strong>@if (introBadge.Length > 1) {<span>@introBadge[1]</span>}</div>
+            }
+        </div>
+        <div>
+            <span class="eyebrow reveal">Who we are</span>
+            <h2 class="reveal" style="--d:1">@(Text("introTitle"))</h2>
+            <div class="rte reveal" style="--d:2">@Html.Raw(Model.Value<IHtmlEncodedString>("introText")?.ToHtmlString())</div>
+            @if (introChecklist.Any())
+            {
+                <ul class="checklist reveal" style="--d:3">
+                    @foreach (var item in introChecklist)
+                    {
+                        <li>@Icons.Get("check") @item</li>
+                    }
+                </ul>
+            }
+            @if (about is not null)
+            {
+                <a class="btn btn-dark reveal" style="--d:4" href="@about.Url()">More about us @Icons.Get("arrow-right")</a>
+            }
+        </div>
+    </div>
+</section>
+
+@if (services is not null)
+{
+    <section class="section section-alt">
+        <div class="container">
+            <div class="section-head">
+                <div>
+                    <span class="eyebrow reveal">What we do</span>
+                    <h2 class="reveal" style="--d:1">@(Text("servicesHeading") ?? services.Name)</h2>
+                    <p class="reveal" style="--d:2">@(services.Value<string>("summary"))</p>
+                </div>
+                <a class="link-arrow reveal" href="@services.Url()">All services @Icons.Get("arrow-right")</a>
+            </div>
+            <div class="card-grid">
+                @{ var i = 0; }
+                @foreach (var item in services.Children().Where(x => x.IsVisible()).Take(6))
+                {
+                    i++;
+                    <a class="card service-card reveal" style="--d:@((i - 1) % 3)" href="@item.Url()">
+                        <span class="num" aria-hidden="true">@i.ToString("00")</span>
+                        <span class="icon-box">@Icons.ForService(item.UrlSegment)</span>
+                        <h3>@item.Name</h3>
+                        <p>@(item.Value<string>("summary"))</p>
+                        <span class="link-arrow">Learn more @Icons.Get("arrow-right")</span>
+                    </a>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@if (processSteps.Any())
+{
+    <section class="section section-dark">
+        <div class="container">
+            <div class="section-head">
+                <div>
+                    <span class="eyebrow reveal">How we deliver</span>
+                    <h2 class="reveal" style="--d:1">@(Text("processTitle"))</h2>
+                    @if (!string.IsNullOrWhiteSpace(Text("processText")))
+                    {
+                        <p class="reveal" style="--d:2;color:rgba(255,255,255,.7)">@(Text("processText"))</p>
+                    }
+                </div>
+            </div>
+            <div class="process" style="--cols:@Math.Min(processSteps.Count, 5)">
+                @for (var k = 0; k < processSteps.Count; k++)
+                {
+                    var (title, text) = processSteps[k];
+                    <div class="step reveal" style="--d:@k">
+                        <span class="step-dot">@Icons.Get(TextLines.IconAt(k, stepIcons))</span>
+                        <div>
+                            <h3>@title</h3>
+                            @if (!string.IsNullOrWhiteSpace(text)) {<p>@text</p>}
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@if (projects is not null)
+{
+    <section class="section">
+        <div class="container">
+            <div class="section-head">
+                <div>
+                    <span class="eyebrow reveal">Our work</span>
+                    <h2 class="reveal" style="--d:1">@(Text("projectsHeading") ?? projects.Name)</h2>
+                    <p class="reveal" style="--d:2">@(projects.Value<string>("summary"))</p>
+                </div>
+                <a class="link-arrow reveal" href="@projects.Url()">All projects @Icons.Get("arrow-right")</a>
+            </div>
+            <div class="project-grid">
+                @{ var j = 0; }
+                @foreach (var item in projects.Children().Where(x => x.IsVisible()).Take(3))
+                {
+                    <a class="project-tile reveal reveal-zoom" style="--d:@(j++)" href="@item.Url()">
+                        <img class="fade" src="@SiteImages.For(item, 800, 920)" alt="" loading="lazy" />
+                        <div class="tile-body">
+                            <div class="tags">
+                                @if (!string.IsNullOrWhiteSpace(item.Value<string>("location")))
+                                {
+                                    <span class="tag">@Icons.Get("map-pin") @(item.Value<string>("location"))</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(item.Value<string>("projectYear")))
+                                {
+                                    <span class="tag">@(item.Value<string>("projectYear"))</span>
+                                }
+                            </div>
+                            <h3>@item.Name</h3>
+                            <p>@(item.Value<string>("summary"))</p>
+                            <span class="more">View project @Icons.Get("arrow-right")</span>
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@if (!string.IsNullOrWhiteSpace(testimonialQuote))
+{
+    <section class="section section-alt">
+        <div class="container testimonial">
+            <div class="testimonial-media img-reveal reveal-left">
+                <img class="fade" src="@SiteImages.Pick(Model, "testimonialImage", "testimonial", 900, 760)" alt="" loading="lazy" />
+            </div>
+            <div>
+                <span class="eyebrow reveal">Client feedback</span>
+                <span class="quote-mark reveal" aria-hidden="true">&ldquo;</span>
+                <blockquote class="reveal" style="--d:1">
+                    <p>@testimonialQuote</p>
+                </blockquote>
+                @if (!string.IsNullOrWhiteSpace(testimonialName))
+                {
+                    <div class="quote-by reveal" style="--d:2">
+                        <span class="avatar" aria-hidden="true">@initials</span>
+                        <div><strong>@testimonialName</strong><span>@(Text("testimonialRole"))</span></div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@if (contact is not null && !string.IsNullOrWhiteSpace(ctaTitle))
+{
+    <section class="cta">
+        <div class="cta-bg" data-parallax="0.18" aria-hidden="true"><img src="@SiteImages.Pick(Model, "ctaImage", "cta", 2000, 1100)" alt="" loading="lazy" /></div>
+        <div class="container">
+            <span class="eyebrow eyebrow-pill reveal">Let's build together</span>
+            <h2 class="reveal" style="--d:1">@ctaTitle</h2>
+            @if (!string.IsNullOrWhiteSpace(Text("ctaText")))
+            {
+                <p class="reveal" style="--d:2">@(Text("ctaText"))</p>
+            }
+            <div class="hero-actions reveal" style="--d:3">
+                <a class="btn" href="@contact.Url()">Start the conversation @Icons.Get("arrow-right")</a>
+                @if (projects is not null)
+                {
+                    <a class="btn btn-outline" href="@projects.Url()">See our projects</a>
+                }
+            </div>
+        </div>
+    </section>
+}

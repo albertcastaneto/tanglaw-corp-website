@@ -1,0 +1,40 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Extensions
+@using TanglawSite.Models
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@{
+    Layout = "master.cshtml";
+    var i = 0;
+}
+
+@await Html.PartialAsync("pageHeader", Model)
+
+<section class="section">
+    <div class="container">
+        <div class="section-head center">
+            <div>
+                <span class="eyebrow reveal">What we do</span>
+                <h2 class="reveal" style="--d:1">One partner, every stage</h2>
+                <p class="reveal" style="--d:2">Engage us for a single service or for full life-cycle delivery.</p>
+            </div>
+        </div>
+        <div class="card-grid">
+            @foreach (var item in Model.Children().Where(x => x.IsVisible()))
+            {
+                <a class="card img-card reveal" style="--d:@(i++ % 3)" href="@item.Url()">
+                    <div class="thumb">
+                        <img class="fade" src="@SiteImages.For(item, 800, 500)" alt="" loading="lazy" />
+                        <span class="icon-box">@Icons.ForService(item.UrlSegment)</span>
+                    </div>
+                    <div class="body">
+                        <h3>@item.Name</h3>
+                        <p>@(item.Value<string>("summary"))</p>
+                        <span class="link-arrow">Learn more @Icons.Get("arrow-right")</span>
+                    </div>
+                </a>
+            }
+        </div>
+    </div>
+</section>
+
+@await Html.PartialAsync("pageCta", Model, new ViewDataDictionary(ViewData) { ["ctaButton"] = "Talk to an expert" })

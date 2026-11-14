@@ -1,0 +1,107 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using System.Net
+@using Umbraco.Extensions
+@using TanglawSite.Controllers
+@using TanglawSite.Models
+@{
+    Layout = "master.cshtml";
+    var success = TempData["ContactSuccess"] is true;
+    var address = Model.Value<string>("address");
+    var phone = Model.Value<string>("phone");
+    var email = Model.Value<string>("contactEmail");
+    var hours = Model.Value<string>("officeHours");
+    var mapRaw = Model.HasProperty("mapEmbedUrl") ? Model.Value<string>("mapEmbedUrl")?.Trim() : null;
+    // Accept a plain URL, or a full <iframe ...> snippet pasted from Google Maps (take its src)
+    if (mapRaw is not null && mapRaw.Contains("src=\"", StringComparison.OrdinalIgnoreCase))
+    {
+        var start = mapRaw.IndexOf("src=\"", StringComparison.OrdinalIgnoreCase) + 5;
+        var end = mapRaw.IndexOf('"', start);
+        mapRaw = end > start ? WebUtility.HtmlDecode(mapRaw[start..end]) : null;
+    }
+    var mapUrl = mapRaw is not null && mapRaw.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? mapRaw : null;
+
+    // Re-fill fields after a validation error
+    string Posted(string key) => Context.Request.HasFormContentType ? Context.Request.Form[key].ToString() : string.Empty;
+}
+
+@await Html.PartialAsync("pageHeader", Model)
+
+<section class="section section-contact" style="padding-top:0">
+    <div class="container contact-wrap">
+        <div class="form-card reveal" id="contact-form">
+            @if (success)
+            {
+                <div class="alert alert-success" role="status">
+                    @Icons.Get("check-circle")
+                    <div><strong>Thank you!</strong><br />Your message has been sent. We will get back to you within one business day.</div>
+                </div>
+            }
+            else
+            {
+                <h2>Send us a message</h2>
+                <p>Fill in the form and our team will get back to you shortly.</p>
+                using (Html.BeginUmbracoForm<ContactFormController>("Submit", null, new { @class = "contact-form", novalidate = "novalidate" }))
+                {
+                    @* BeginUmbracoForm adds the anti-forgery token automatically *@
+                    @Html.ValidationSummary(true, "", new { @class = "alert alert-error" })
+
+                    <div class="form-row">
+                        <div class="field">
+                            <label for="Name">Full name *</label>
+                            <input id="Name" name="Name" type="text" required maxlength="100" autocomplete="name" placeholder="Juan dela Cruz" value="@Posted("Name")" />
+                            @Html.ValidationMessage("Name", null, new { @class = "field-error" })
+                        </div>
+                        <div class="field">
+                            <label for="Email">Email *</label>
+                            <input id="Email" name="Email" type="email" required maxlength="200" autocomplete="email" placeholder="you@company.com" value="@Posted("Email")" />
+                            @Html.ValidationMessage("Email", null, new { @class = "field-error" })
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="Company">Company / Organization</label>
+                        <input id="Company" name="Company" type="text" maxlength="150" autocomplete="organization" placeholder="Organization name" value="@Posted("Company")" />
+                    </div>
+                    <div class="field">
+                        <label for="Message">How can we help? *</label>
+                        <textarea id="Message" name="Message" rows="6" required maxlength="4000" placeholder="Tell us about your project, location and timeline">@Posted("Message")</textarea>
+                        @Html.ValidationMessage("Message", null, new { @class = "field-error" })
+                    </div>
+                    <div class="hp" aria-hidden="true">
+                        <label for="Website">Leave this empty</label>
+                        <input id="Website" name="Website" type="text" tabindex="-1" autocomplete="off" />
+                    </div>
+                    <button type="submit" class="btn">Send message @Icons.Get("send")</button>
+                    <p class="form-note">We respect your privacy. Your details are only used to respond to your enquiry.</p>
+                }
+            }
+        </div>
+
+        <aside>
+            <div class="info-cards">
+                @if (!string.IsNullOrWhiteSpace(address))
+                {
+                    <div class="info-card reveal" style="--d:1"><span class="icon-box">@Icons.Get("map-pin")</span><div><small>Office</small><strong>@Html.Raw(WebUtility.HtmlEncode(address).Replace("\n", "<br>"))</strong></div></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(phone))
+                {
+                    <div class="info-card reveal" style="--d:2"><span class="icon-box">@Icons.Get("phone")</span><div><small>Phone</small><a href="tel:@phone.Replace(" ", "")">@phone</a></div></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(email))
+                {
+                    <div class="info-card reveal" style="--d:3"><span class="icon-box">@Icons.Get("mail")</span><div><small>Email</small><a href="mailto:@email">@email</a></div></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(hours))
+                {
+                    <div class="info-card reveal" style="--d:4"><span class="icon-box">@Icons.Get("clock")</span><div><small>Office hours</small><strong>@hours</strong></div></div>
+                }
+            </div>
+            @* Map URL is the "Map Embed URL" field on the Contact page (only https links are used) *@
+            @if (mapUrl is not null)
+            {
+                <div class="map reveal" style="--d:2">
+                    <iframe title="Office location map" loading="lazy" src="@mapUrl"></iframe>
+                </div>
+            }
+        </aside>
+    </div>
+</section>

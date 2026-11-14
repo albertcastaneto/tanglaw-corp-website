@@ -1,0 +1,28 @@
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Extensions
+@using TanglawSite.Models
+@* Shared banner for inner pages: background photo, breadcrumb, title and summary. *@
+@{
+    var crumbs = Model.Ancestors().Reverse().ToList();
+}
+<section class="page-header">
+    <div class="hero-bg" data-parallax="0.2" aria-hidden="true">
+        <img src="@SiteImages.For(Model, 2000, 1100)" alt="" fetchpriority="high" />
+    </div>
+    <div class="container">
+        <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb enter" style="--d:0">
+                @foreach (var c in crumbs)
+                {
+                    <li><a href="@c.Url()">@(c.Level == 1 ? "Home" : c.Name)</a></li>
+                }
+                <li aria-current="page">@Model.Name</li>
+            </ol>
+        </nav>
+        <h1 class="enter" style="--d:1">@Model.Name</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Value<string>("summary")))
+        {
+            <p class="lead enter" style="--d:2">@(Model.Value<string>("summary"))</p>
+        }
+    </div>
+</section>

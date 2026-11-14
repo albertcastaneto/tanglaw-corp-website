@@ -1,0 +1,158 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Extensions
+@using TanglawSite.Models
+@{
+    Layout = null;
+    var home = Model.Root();
+    var navItems = home.Children().Where(x => x.IsVisible()).ToList();
+    var contact = navItems.FirstOrDefault(x => x.ContentType.Alias == "contactPage");
+    var services = navItems.FirstOrDefault(x => x.ContentType.Alias == "servicesPage");
+    var menuItems = navItems.Where(x => x.Id != contact?.Id).ToList();
+    var currentUrl = Model.Url();
+    var metaDescription = Model.Value<string>("metaDescription");
+    var pageTitle = Model.Id == home.Id ? "Tanglaw Infrastructure Partners | Integrated Project Management" : $"{Model.Name} | Tanglaw Infrastructure Partners";
+    var phone = contact?.Value<string>("phone");
+    var email = contact?.Value<string>("contactEmail");
+    var address = contact?.Value<string>("address");
+    string? SafeUrl(string alias)
+    {
+        var v = home.HasProperty(alias) ? home.Value<string>(alias)?.Trim() : null;
+        return v is not null && (v.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || v.StartsWith("http://", StringComparison.OrdinalIgnoreCase)) ? v : null;
+    }
+    var linkedin = SafeUrl("linkedinUrl");
+    var facebook = SafeUrl("facebookUrl");
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>@pageTitle</title>
+    @if (!string.IsNullOrWhiteSpace(metaDescription))
+    {
+        <meta name="description" content="@metaDescription" />
+        <meta property="og:description" content="@metaDescription" />
+    }
+    <meta property="og:title" content="@pageTitle" />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0b2239" />
+    <script>document.documentElement.classList.add('js');</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/lenis@1.1.13/dist/lenis.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="scroll-progress" aria-hidden="true"><span></span></div>
+
+    <header class="site-header">
+        <div class="container header-inner">
+            <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Open menu" aria-controls="main-nav" />
+            <a class="brand" href="@home.Url()" aria-label="Tanglaw Infrastructure Partners, home">
+                <span class="brand-mark" aria-hidden="true">T</span>
+                <span class="brand-text">Tanglaw<small>Infrastructure Partners</small></span>
+            </a>
+            <label for="nav-toggle" class="nav-toggle-label" aria-hidden="true"><span></span></label>
+
+            <nav class="main-nav" id="main-nav" aria-label="Main">
+                <ul>
+                    <li><a href="@home.Url()" class="@(Model.Id == home.Id ? "active" : null)">Home</a></li>
+                    @foreach (var item in menuItems)
+                    {
+                        var isActive = currentUrl.StartsWith(item.Url(), StringComparison.OrdinalIgnoreCase);
+                        <li><a href="@item.Url()" class="@(isActive ? "active" : null)">@item.Name</a></li>
+                    }
+                    @if (contact is not null)
+                    {
+                        <li class="nav-cta"><a class="btn btn-sm" href="@contact.Url()">Get in touch @Icons.Get("arrow-right")</a></li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main">
+        @RenderBody()
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-top">
+            <div class="reveal">
+                <a class="brand" href="@home.Url()">
+                    <span class="brand-mark" aria-hidden="true">T</span>
+                    <span class="brand-text">Tanglaw<small>Infrastructure Partners</small></span>
+                </a>
+                <p>Integrated project management and infrastructure delivery, from feasibility to handover. Built on discipline, transparency and public value.</p>
+                <div class="socials">
+                    @if (!string.IsNullOrWhiteSpace(linkedin))
+                    {
+                        <a href="@linkedin" target="_blank" rel="noopener" aria-label="LinkedIn">@Icons.Get("linkedin")</a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(facebook))
+                    {
+                        <a href="@facebook" target="_blank" rel="noopener" aria-label="Facebook">@Icons.Get("facebook")</a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(email))
+                    {
+                        <a href="mailto:@email" aria-label="Email us">@Icons.Get("mail")</a>
+                    }
+                </div>
+            </div>
+            <div class="reveal" style="--d:1">
+                <h3>Company</h3>
+                <ul class="footer-links">
+                    <li><a href="@home.Url()">Home</a></li>
+                    @foreach (var item in navItems)
+                    {
+                        <li><a href="@item.Url()">@item.Name</a></li>
+                    }
+                </ul>
+            </div>
+            @if (services is not null)
+            {
+                <div class="reveal" style="--d:2">
+                    <h3>Services</h3>
+                    <ul class="footer-links">
+                        @foreach (var s in services.Children().Where(x => x.IsVisible()).Take(6))
+                        {
+                            <li><a href="@s.Url()">@s.Name</a></li>
+                        }
+                    </ul>
+                </div>
+            }
+            <div class="reveal" style="--d:3">
+                <h3>Get in touch</h3>
+                <ul class="footer-links footer-contact">
+                    @if (!string.IsNullOrWhiteSpace(address))
+                    {
+                        <li>@Icons.Get("map-pin")<span>@address.Split('\n').FirstOrDefault()?.Trim()<br />@(address.Split('\n').Skip(1).FirstOrDefault()?.Trim())</span></li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(phone))
+                    {
+                        <li>@Icons.Get("phone")<a href="tel:@phone.Replace(" ", "")">@phone</a></li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(email))
+                    {
+                        <li>@Icons.Get("mail")<a href="mailto:@email">@email</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
+        <div class="container footer-bottom">
+            <p>@(home.Value<string>("footerText") ?? $"© {DateTime.Now.Year} Tanglaw Infrastructure Partners")</p>
+            <p>Integrated Project Management &amp; Infrastructure Delivery</p>
+        </div>
+    </footer>
+
+    <button type="button" class="to-top" aria-label="Back to top">
+        <svg class="ring" viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="25.5" /></svg>
+        @Icons.Get("arrow-up")
+    </button>
+
+    <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js" defer></script>
+    <script src="~/js/site.js" asp-append-version="true" defer></script>
+</body>
+</html>
